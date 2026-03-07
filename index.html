@@ -28,6 +28,9 @@ window.onerror = function(msg, src, line, col, err) {
 const {useState,useRef} = React;
 
 // CÓDIGOS DE INVITACIÓN
+// SOLICITUDES PREMIUM
+const REQUESTS0 = [];
+
 const INVITE_CODES = [
   {code:"REDAUTO-2025-A1", used:false, note:"Para AutoCenter Este"},
   {code:"REDAUTO-2025-B2", used:false, note:"Para Garage Centro"},
@@ -36,7 +39,7 @@ const INVITE_CODES = [
 const ADMIN = {email:"admin@redauto.com", password:"redauto2025"};
 
 const USERS = [
-  {id:"u1",email:"carlos@autocenter.com",password:"1234",name:"Carlos Mendez",agency:"AutoCenter Norte",city:"Yerba Buena",plan:"premium",credits:8,rating:4.8,ops:34,color:"#6366f1"},
+  {id:"u1",email:"carlos@autocenter.com",password:"1234",name:"Carlos Mendez",agency:"AutoCenter Norte",city:"Yerba Buena",plan:"premium",credits:8,rating:4.8,ops:34,color:"#6366f1",premiumExpiry:"2026-03-12"},
   {id:"u4",email:"motorshow@demo.com",password:"1234",name:"Marcos Villafuerte",agency:"Motorshow",city:"San Miguel de Tucuman",plan:"free",credits:0,rating:4.5,ops:0,color:"#e11d48"},
 ];
 
@@ -463,7 +466,9 @@ function Dashboard({user,onLogout}) {
   const [ops,setOps]=useState(OPS0[user.id]||[]);
   const [clientes,setClientes]=useState(CLIENTES0[user.id]||[]);
   const [modalCliente,setModalCliente]=useState(false);
-  const [rateModal,setRateModal]=useState(null); // agency object
+  const [rateModal,setRateModal]=useState(null);
+  const [requests,setRequests]=useState(REQUESTS0);
+  const [premiumRequested,setPremiumRequested]=useState(false); // agency object
   const [rateStars,setRateStars]=useState(5);
   const [rateComment,setRateComment]=useState("");
   const [editCliente,setEditCliente]=useState(null);
@@ -481,6 +486,14 @@ function Dashboard({user,onLogout}) {
 
   const plan=PLAN_BY_ID(me.plan);
   const isFree=me.plan==="free";
+
+  // Premium expiry
+  const _today=new Date(); _today.setHours(0,0,0,0);
+  const _expiry=me.premiumExpiry?new Date(me.premiumExpiry):null;
+  const daysLeft=_expiry?Math.ceil((_expiry-_today)/(1000*60*60*24)):null;
+  const isExpiringSoon=!isFree&&daysLeft!==null&&daysLeft<=7&&daysLeft>0;
+  const isExpired=!isFree&&daysLeft!==null&&daysLeft<=0;
+  if(isExpired){setTimeout(()=>setMe(p=>({...p,plan:"free",premiumExpiry:null})),0);}
   const othersStock=NET_STOCK.filter(s=>{
     // exclude user's own stock items
     if(stock.find(m=>m.id===s.id)) return false;
@@ -511,6 +524,21 @@ function Dashboard({user,onLogout}) {
     }, 80);
   }
 
+  function doRequestPremium(){
+    if(premiumRequested || !isFree) return;
+    const req = {
+      id:"req"+Date.now(),
+      agencyId: agencies.find(a=>a.name===me.agency)?.id || "",
+      agencyName: me.agency,
+      ownerName: me.name,
+      email: me.email,
+      city: me.city || "",
+      date: new Date().toISOString().slice(0,10),
+      status:"pendiente"
+    };
+    setRequests(p=>[req,...p]);
+    setPremiumRequested(true);
+  }
   function doRate(e){
     e.preventDefault();
     if(!rateModal) return;
@@ -1131,6 +1159,37 @@ function Dashboard({user,onLogout}) {
                     {/* PLAN Y PRECIOS */}
           {tab==="plans"&&(
             <div className="fu">
+
+              {/* EXPIRY WARNING */}
+              {isExpiringSoon&&(
+                <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:22}}>⚠️</span>
+                  <div style={{flex:1}}>
+                    <p style={{fontSize:13,fontWeight:800,color:"#92400e"}}>Tu Plan Premium vence en {daysLeft} día{daysLeft!==1?"s":""}</p>
+                    <p style={{fontSize:12,color:"#b45309",marginTop:2}}>Renovalo para no perder el acceso ilimitado y la búsqueda inversa.</p>
+                  </div>
+                  <button onClick={doRequestPremium} disabled={premiumRequested}
+                    style={{padding:"9px 18px",borderRadius:10,border:"none",background:"#d97706",color:"#fff",fontWeight:700,fontSize:13,cursor:premiumRequested?"not-allowed":"pointer",fontFamily:"inherit",whiteSpace:"nowrap",opacity:premiumRequested?.6:1}}>
+                    {premiumRequested?"✓ Solicitud enviada":"🔄 Renovar ahora"}
+                  </button>
+                </div>
+              )}
+
+              {/* ACTIVE PREMIUM STATUS */}
+              {!isFree&&!isExpiringSoon&&daysLeft!==null&&(
+                <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:22}}>✅</span>
+                  <div style={{flex:1}}>
+                    <p style={{fontSize:13,fontWeight:800,color:"#166534"}}>Plan Premium activo — vence el {me.premiumExpiry}</p>
+                    <p style={{fontSize:12,color:"#16a34a",marginTop:2}}>Te quedan {daysLeft} días. Podés renovar o cancelar cuando quieras.</p>
+                  </div>
+                  <button onClick={()=>setMe(p=>({...p,plan:"free",premiumExpiry:null}))}
+                    style={{padding:"9px 18px",borderRadius:10,border:"1.5px solid #fecaca",background:"#fff1f2",color:"#dc2626",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                    Cancelar plan
+                  </button>
+                </div>
+              )}
+
               <div style={{textAlign:"center",marginBottom:32}}>
                 <p style={{fontSize:11,fontWeight:700,color:"#7c3aed",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Suscripcion mensual</p>
                 <h2 style={{fontSize:26,fontWeight:900,letterSpacing:"-.5px",marginBottom:10}}>Plan y Precios</h2>
@@ -1243,13 +1302,22 @@ function Dashboard({user,onLogout}) {
                           <p style={{fontSize:12,color:"#94a3b8"}}>Plan basico gratuito</p>
                         </div>
                       ):(
+                        <>
                         <button
                           onClick={()=>setMe(prev=>({...prev,plan:"premium",credits:9999}))}
                           style={{width:"100%",padding:"12px",fontSize:14,fontWeight:700,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",color:"#fff",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(124,58,237,.35)",transition:"all .15s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}
                           onMouseEnter={e=>{e.currentTarget.style.opacity=".9";e.currentTarget.style.transform="translateY(-1px)";}}
-                          onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="";}}>
+                          onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="";}}> 
                           <Icon n="workspace_premium" size={15} color="#fff"/>Activar Plan Premium
                         </button>
+                        <button
+                          onClick={doRequestPremium}
+                          disabled={premiumRequested}
+                          style={{marginTop:10,width:"100%",padding:"12px",borderRadius:12,border:"none",background:premiumRequested?"#f1f5f9":"linear-gradient(135deg,#0ea5e9,#0284c7)",color:premiumRequested?"#94a3b8":"#fff",fontWeight:700,fontSize:13,cursor:premiumRequested?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                          <Icon n="rocket_launch" size={15} color={premiumRequested?"#94a3b8":"#fff"}/>
+                          {premiumRequested?"✓ Solicitud enviada — te contactaremos pronto":"Solicitar Plan Premium"}
+                        </button>
+                        </>
                       )}
                     </div>
                   );
