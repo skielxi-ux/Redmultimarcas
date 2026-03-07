@@ -793,8 +793,8 @@ function Dashboard({user,onLogout}) {
                               <div>
                                 <p style={{fontSize:11,color:"#64748b"}}>Agencia</p>
                                 <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
-                                  <div className="av" style={{width:22,height:22,background:ownerAg.color,borderRadius:5,fontSize:9}}>{ownerAg.name[0]}</div>
-                                  <p style={{fontSize:12,fontWeight:600,color:"#374151"}}>{ownerAg.name}</p>
+                                  <div className="av" style={{width:22,height:22,background:isFree?"#e2e8f0":ownerAg.color,borderRadius:5,fontSize:9}}>{isFree?"?":ownerAg.name[0]}</div>
+                                  <p style={{fontSize:12,fontWeight:600,color:isFree?"#94a3b8":"#374151"}}>{isFree?"Bloqueado — pagá para ver":ownerAg.name}</p>
                                 </div>
                               </div>
                             )}
