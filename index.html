@@ -13,6 +13,9 @@
 html,body{height:100%} #root{min-height:100%;overflow-y:auto}
 body{font-family:'Plus Jakarta Sans','DM Sans','Nunito',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 16px rgba(34,197,94,.5)}50%{box-shadow:0 0 28px rgba(34,197,94,.9)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 16px rgba(34,197,94,.5)}50%{box-shadow:0 0 28px rgba(34,197,94,.9)}}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:10px}
 </style>
@@ -457,6 +460,50 @@ function Login({onLogin}) {
   );
 }
 
+
+function FaqTab() {
+  const [open, setOpen] = useState(null);
+  const faqs = [
+    {q:"¿Qué es RedAuto?", a:"RedAuto es una red B2B colaborativa entre concesionarios multimarcas de Tucumán. Permite compartir stock, encontrar matches entre lo que tenés y lo que buscan otros, y cerrar operaciones en conjunto ganando comisiones."},
+    {q:"¿Cómo funciona el sistema de matches?", a:"Cuando cargás un auto en tu stock y otro concesionario tiene un cliente buscando ese vehículo (o viceversa), el sistema genera un match automático. Podés ver el contacto y coordinar la operación directamente."},
+    {q:"¿Qué diferencia hay entre el Plan Gratis y el Premium?", a:"El Plan Gratis te permite publicar hasta 3 autos y ver matches, pero los contactos están bloqueados y necesitás créditos para desbloquearlos. El Plan Premium ($100.000/mes) te da stock ilimitado, contactos siempre visibles, búsqueda inversa y sin necesidad de créditos."},
+    {q:"¿Cómo se pagan las comisiones?", a:"Las comisiones se acuerdan entre las partes al momento de establecer la conexión. RedAuto facilita el contacto y el seguimiento de la operación, pero el acuerdo económico es directo entre los concesionarios involucrados."},
+    {q:"¿Cómo me uno a la red?", a:"La red es exclusiva para concesionarios verificados. Para registrarte necesitás un código de invitación que te enviamos nosotros. Contactanos por WhatsApp para solicitar tu acceso."},
+  ];
+  return (
+    <div className="fu" style={{maxWidth:680}}>
+      <h2 style={{fontSize:18,fontWeight:900,color:"#0f172a",marginBottom:4}}>Preguntas frecuentes</h2>
+      <p style={{fontSize:13,color:"#64748b",marginBottom:24}}>Todo lo que necesitás saber sobre RedAuto.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {faqs.map((f,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:12,border:"1.5px solid",borderColor:open===i?"#bfdbfe":"#e2e8f0",overflow:"hidden",transition:"border-color .2s"}}>
+            <button onClick={()=>setOpen(open===i?null:i)}
+              style={{width:"100%",padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <span style={{fontSize:14,fontWeight:700,color:"#0f172a"}}>{f.q}</span>
+              <span style={{fontSize:18,color:"#94a3b8",flexShrink:0,marginLeft:12,transition:"transform .2s",transform:open===i?"rotate(180deg)":"rotate(0deg)"}}>⌄</span>
+            </button>
+            {open===i&&(
+              <div style={{padding:"0 20px 16px"}}>
+                <p style={{fontSize:13,color:"#475569",lineHeight:1.7}}>{f.a}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:28,background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:14,padding:"20px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:16}}>
+        <div>
+          <p style={{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}}>¿Tenés otra pregunta?</p>
+          <p style={{fontSize:12,color:"#94a3b8"}}>Escribinos por WhatsApp y te respondemos al toque.</p>
+        </div>
+        <a href="https://wa.me/5493816000000" target="_blank"
+          style={{padding:"10px 20px",background:"#25d366",color:"#fff",borderRadius:10,fontWeight:700,fontSize:13,textDecoration:"none",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8}}>
+          💬 WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({user,onLogout}) {
   const [tab,setTab]=useState("dashboard");
   const [me,setMe]=useState(user);
@@ -480,6 +527,8 @@ function Dashboard({user,onLogout}) {
   const [buyQty,setBuyQty]=useState(1);
   const [gateItem,setGateItem]=useState(null);
   const [mpModal,setMpModal]=useState(false);
+  const [premiumModal,setPremiumModal]=useState(false);
+  const [premiumStep,setPremiumStep]=useState("select"); // select | processing | approved
   const [mpStep,setMpStep]=useState("select"); // select | processing | done
   const [ns,setNs]=useState({brand:"",model:"",year:"",price:"",km:"",fuel:"Diesel",color:"",commission:2,desc:""});
   const [nq,setNq]=useState({brand:"",model:"",yearFrom:"",yearTo:"",budget:"",payment:"Contado"});
@@ -563,6 +612,19 @@ function Dashboard({user,onLogout}) {
   function updateClienteStatus(id,status){
     setClientes(p=>p.map(c=>c.id===id?{...c,status}:c));
     setEditCliente(null);
+  }
+  function doConfirmPremium(){
+    setPremiumStep("processing");
+    setTimeout(()=>{
+      setPremiumStep("approved");
+      setTimeout(()=>{
+        const expiry = new Date();
+        expiry.setMonth(expiry.getMonth()+1);
+        setMe(p=>({...p, plan:"premium", credits:9999, premiumExpiry:expiry.toISOString().slice(0,10)}));
+        setPremiumModal(false);
+        setPremiumStep("select");
+      }, 2000);
+    }, 2500);
   }
   function doConfirmPayment(){
     setMpModal(false);
@@ -689,6 +751,18 @@ function Dashboard({user,onLogout}) {
             {tab==="dashboard"&&<>
               <button className="btn btn-o" onClick={()=>setModalSearch(true)}><Icon n="manage_search" size={15}/>Buscar auto</button>
               <button className="btn btn-p" onClick={()=>setModalStock(true)}><Icon n="add" size={16} color="#fff"/>Publicar auto</button>
+              {!isFree&&isExpiringSoon&&(
+                <button onClick={()=>{setPremiumModal(true);setPremiumStep("select");}}
+                  style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:7,boxShadow:"0 0 16px rgba(34,197,94,.5)",animation:"pulse 2s infinite"}}>
+                  🔄 Renovar Premium
+                </button>
+              )}
+              {isFree&&(
+                <button onClick={()=>{setPremiumModal(true);setPremiumStep("select");}}
+                  style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:7,boxShadow:"0 0 16px rgba(34,197,94,.5)"}}>
+                  ⚡ Activar Premium
+                </button>
+              )}
             </>}
             <div className="av" style={{width:32,height:32,background:me.color,borderRadius:9,fontSize:12,cursor:"pointer"}}>{me.name[0]}</div>
           </div>
@@ -1166,7 +1240,7 @@ function Dashboard({user,onLogout}) {
                   <span style={{fontSize:22}}>⚠️</span>
                   <div style={{flex:1}}>
                     <p style={{fontSize:13,fontWeight:800,color:"#92400e"}}>Tu Plan Premium vence en {daysLeft} día{daysLeft!==1?"s":""}</p>
-                    <p style={{fontSize:12,color:"#b45309",marginTop:2}}>Renovalo para no perder el acceso ilimitado y la búsqueda inversa.</p>
+                    <p style={{fontSize:12,color:"#b45309",marginTop:2}}>Renovalo para no perder el acceso ilimitado y la búsqueda inversa. Si no lo renovás, tu plan pasará al plan gratuito.</p>
                   </div>
                   <button onClick={doRequestPremium} disabled={premiumRequested}
                     style={{padding:"9px 18px",borderRadius:10,border:"none",background:"#d97706",color:"#fff",fontWeight:700,fontSize:13,cursor:premiumRequested?"not-allowed":"pointer",fontFamily:"inherit",whiteSpace:"nowrap",opacity:premiumRequested?.6:1}}>
@@ -1302,22 +1376,14 @@ function Dashboard({user,onLogout}) {
                           <p style={{fontSize:12,color:"#94a3b8"}}>Plan basico gratuito</p>
                         </div>
                       ):(
-                        <>
                         <button
-                          onClick={()=>setMe(prev=>({...prev,plan:"premium",credits:9999}))}
+                          onClick={()=>{setPremiumModal(true);setPremiumStep("select");}}
                           style={{width:"100%",padding:"12px",fontSize:14,fontWeight:700,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",color:"#fff",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 16px rgba(124,58,237,.35)",transition:"all .15s",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}
                           onMouseEnter={e=>{e.currentTarget.style.opacity=".9";e.currentTarget.style.transform="translateY(-1px)";}}
                           onMouseLeave={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="";}}> 
                           <Icon n="workspace_premium" size={15} color="#fff"/>Activar Plan Premium
                         </button>
-                        <button
-                          onClick={doRequestPremium}
-                          disabled={premiumRequested}
-                          style={{marginTop:10,width:"100%",padding:"12px",borderRadius:12,border:"none",background:premiumRequested?"#f1f5f9":"linear-gradient(135deg,#0ea5e9,#0284c7)",color:premiumRequested?"#94a3b8":"#fff",fontWeight:700,fontSize:13,cursor:premiumRequested?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                          <Icon n="rocket_launch" size={15} color={premiumRequested?"#94a3b8":"#fff"}/>
-                          {premiumRequested?"✓ Solicitud enviada — te contactaremos pronto":"Solicitar Plan Premium"}
-                        </button>
-                        </>
+
                       )}
                     </div>
                   );
@@ -1453,6 +1519,84 @@ function Dashboard({user,onLogout}) {
                 Entendido
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PAGO PREMIUM */}
+      {premiumModal&&(
+        <div className="modal-bg fi" onClick={e=>e.target===e.currentTarget&&premiumStep!=="processing"&&setPremiumModal(false)}>
+          <div className="modal-box fu" style={{maxWidth:420}}>
+
+            {premiumStep==="select"&&(
+              <>
+                <div style={{padding:"24px 24px 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                    <div style={{width:38,height:38,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <Icon n="workspace_premium" size={20} color="#fff"/>
+                    </div>
+                    <div>
+                      <h3 style={{fontSize:15,fontWeight:800}}>Activar Plan Premium</h3>
+                      <p style={{fontSize:11,color:"#64748b"}}>$100.000 / mes · 1 mes de acceso</p>
+                    </div>
+                  </div>
+                  <button type="button" className="btn btn-g" style={{padding:"5px 8px"}} onClick={()=>setPremiumModal(false)}><Icon n="close" size={18}/></button>
+                </div>
+                <div style={{padding:"20px 24px",display:"flex",flexDirection:"column",gap:14}}>
+                  <div style={{background:"#f8fafc",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                    <p style={{fontSize:11,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Resumen</p>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                      <span style={{fontSize:13,color:"#475569"}}>Plan Premium — 1 mes</span>
+                      <span style={{fontSize:13,fontWeight:700}}>$100.000</span>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:"1px solid #e2e8f0",marginTop:4}}>
+                      <span style={{fontSize:13,fontWeight:700}}>Total</span>
+                      <span style={{fontSize:15,fontWeight:900,color:"#7c3aed"}}>$100.000</span>
+                    </div>
+                  </div>
+                  <p style={{fontSize:12,fontWeight:700,color:"#0f172a"}}>Seleccioná tu método de pago</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {[
+                      {icon:"💳", label:"Tarjeta de crédito / débito", sub:"Visa, Mastercard, Naranja"},
+                      {icon:"🏦", label:"Transferencia bancaria", sub:"CBU / CVU inmediato"},
+                      {icon:"📱", label:"Mercado Pago", sub:"Saldo, QR, cuotas"},
+                    ].map((m,i)=>(
+                      <button key={i} type="button" onClick={doConfirmPremium}
+                        style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:12,cursor:"pointer",fontFamily:"inherit",textAlign:"left",transition:"all .15s"}}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor="#a78bfa";e.currentTarget.style.background="#faf5ff";}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#fff";}}>
+                        <span style={{fontSize:22}}>{m.icon}</span>
+                        <div>
+                          <p style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>{m.label}</p>
+                          <p style={{fontSize:11,color:"#94a3b8"}}>{m.sub}</p>
+                        </div>
+                        <Icon n="chevron_right" size={16} color="#94a3b8" style={{marginLeft:"auto"}}/>
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{fontSize:11,color:"#94a3b8",textAlign:"center",marginTop:4}}>🔒 Pago seguro procesado por Mercado Pago</p>
+                </div>
+              </>
+            )}
+
+            {premiumStep==="processing"&&(
+              <div style={{padding:"60px 40px",textAlign:"center"}}>
+                <div style={{width:64,height:64,borderRadius:"50%",border:"4px solid #e2e8f0",borderTopColor:"#7c3aed",margin:"0 auto 20px",animation:"spin 1s linear infinite"}}/>
+                <p style={{fontSize:16,fontWeight:800,color:"#0f172a"}}>Procesando pago...</p>
+                <p style={{fontSize:13,color:"#64748b",marginTop:6}}>No cerrés esta ventana</p>
+              </div>
+            )}
+
+            {premiumStep==="approved"&&(
+              <div style={{padding:"60px 40px",textAlign:"center"}}>
+                <div style={{width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#7c3aed,#6d28d9)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",boxShadow:"0 8px 24px rgba(124,58,237,.3)"}}>
+                  <Icon n="check" size={32} color="#fff"/>
+                </div>
+                <p style={{fontSize:18,fontWeight:900,color:"#0f172a"}}>¡Plan Premium activado!</p>
+                <p style={{fontSize:13,color:"#64748b",marginTop:8}}>Tu acceso Premium está activo por 1 mes.</p>
+              </div>
+            )}
+
           </div>
         </div>
       )}
