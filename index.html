@@ -214,224 +214,235 @@ function Chip({children,bg="#f1f5f9",color="#64748b",icon}) {
 
 /* LOGIN */
 function Login({onLogin}) {
-  const [email,setEmail]=useState("");
-  const [pass,setPass]=useState("");
-  const [err,setErr]=useState("");
-  const [busy,setBusy]=useState(false);
-  const [showP,setShowP]=useState(false);
+  const [mode, setMode] = useState("login"); // "login" | "register" | "admin"
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [showP, setShowP] = useState(false);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e){
-    e.preventDefault();setErr("");setBusy(true);
+  // Register fields
+  const [inviteCode, setInviteCode] = useState("");
+  const [regAgency, setRegAgency] = useState("");
+  const [regOwner, setRegOwner] = useState("");
+  const [regCity, setRegCity] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPass, setRegPass] = useState("");
+
+  // Admin state
+  const [codes, setCodes] = useState(INVITE_CODES);
+  const [users, setUsers] = useState(USERS);
+  const [newCodeNote, setNewCodeNote] = useState("");
+  const [adminTab, setAdminTab] = useState("codes");
+
+  function generateCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const rand = Array.from({length:8}, ()=>chars[Math.floor(Math.random()*chars.length)]).join("");
+    return "RA-" + rand;
+  }
+
+  function submitLogin(e) {
+    e.preventDefault(); setErr(""); setBusy(true);
     setTimeout(()=>{
-      const u=USERS.find(u=>u.email===email&&u.password===pass);
-      if(u) onLogin(u); else {setErr("Email o contraseña incorrectos.");setBusy(false);}
+      // Check admin
+      if(email===ADMIN.email && pass===ADMIN.password){ setMode("admin"); setBusy(false); return; }
+      const u = users.find(u=>u.email===email && u.password===pass);
+      if(u) onLogin(u);
+      else { setErr("Email o contraseña incorrectos."); setBusy(false); }
     },500);
   }
 
-  const fieldStyle = {
-    width:"100%", padding:"13px 16px", fontSize:14,
-    border:"2px solid #e2e8f0", borderRadius:12,
-    background:"#ffffff", color:"#0f172a",
-    fontFamily:"'Plus Jakarta Sans','DM Sans',system-ui,sans-serif",
-    outline:"none", transition:"border-color .15s, box-shadow .15s",
-    boxSizing:"border-box"
-  };
-  const btnStyle = {
-    width:"100%", padding:"14px", fontSize:15, fontWeight:700,
-    background:"linear-gradient(135deg,#2563eb,#1d4ed8)",
-    color:"#fff", border:"none", borderRadius:12, cursor:"pointer",
-    fontFamily:"'Plus Jakarta Sans','DM Sans',system-ui,sans-serif",
-    boxShadow:"0 4px 16px rgba(37,99,235,.35)",
-    transition:"all .15s", letterSpacing:"-.2px"
-  };
+  function submitRegister(e) {
+    e.preventDefault(); setErr(""); setBusy(true);
+    setTimeout(()=>{
+      const codeEntry = codes.find(c=>c.code===inviteCode.trim().toUpperCase() && !c.used);
+      if(!codeEntry){ setErr("Código inválido o ya utilizado. Contactá al administrador."); setBusy(false); return; }
+      // Mark code as used
+      setCodes(prev=>prev.map(c=>c.code===codeEntry.code?{...c,used:true}:c));
+      // Create new user
+      const colors = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ec4899","#8b5cf6","#e11d48","#0284c7"];
+      const newUser = {
+        id:"u"+Date.now(), email:regEmail, password:regPass,
+        name:regOwner, agency:regAgency, city:regCity,
+        plan:"free", credits:0, rating:1, ops:0,
+        color:colors[Math.floor(Math.random()*colors.length)]
+      };
+      setUsers(prev=>[...prev, newUser]);
+      onLogin(newUser);
+    },600);
+  }
+
+  const field = {width:"100%",padding:"13px 16px",fontSize:14,border:"2px solid #e2e8f0",borderRadius:12,background:"#fff",color:"#0f172a",fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
+  const btn = {width:"100%",padding:"14px",fontSize:15,fontWeight:700,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",color:"#fff",border:"none",borderRadius:12,cursor:"pointer",fontFamily:"inherit"};
 
   return (
-    <div style={{
-      minHeight:"100vh",
-      background:"linear-gradient(160deg,#dbeafe 0%,#eff6ff 40%,#e0e7ff 100%)",
-      display:"flex", alignItems:"flex-start", justifyContent:"center",
-      padding:"48px 24px", overflowY:"auto", fontFamily:"'Plus Jakarta Sans','DM Sans',system-ui,sans-serif"
-    }}>
-      {/* blobs decorativos */}
-      <div style={{position:"fixed",top:-180,right:-180,width:500,height:500,background:"radial-gradient(circle,rgba(37,99,235,.15),transparent 70%)",borderRadius:"50%",pointerEvents:"none",zIndex:0}}/>
-      <div style={{position:"fixed",bottom:-150,left:-150,width:460,height:460,background:"radial-gradient(circle,rgba(99,102,241,.12),transparent 70%)",borderRadius:"50%",pointerEvents:"none",zIndex:0}}/>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#dbeafe 0%,#eff6ff 40%,#e0e7ff 100%)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"48px 24px",overflowY:"auto",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+      <div style={{position:"fixed",top:-180,right:-180,width:500,height:500,background:"radial-gradient(circle,rgba(37,99,235,.15),transparent 70%)",borderRadius:"50%",pointerEvents:"none"}}/>
+      <div style={{position:"fixed",bottom:-150,left:-150,width:460,height:460,background:"radial-gradient(circle,rgba(99,102,241,.12),transparent 70%)",borderRadius:"50%",pointerEvents:"none"}}/>
 
-      <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
+      <div style={{width:"100%",maxWidth:440,position:"relative",zIndex:1}}>
 
-        {/* logo */}
-        <div style={{textAlign:"center",marginBottom:36}}>
-          <div style={{
-            width:76,height:76,
-            background:"linear-gradient(145deg,#3b82f6,#2563eb,#1d4ed8)",
-            borderRadius:22,
-            display:"flex",alignItems:"center",justifyContent:"center",
-            margin:"0 auto 18px",
-            boxShadow:"0 16px 40px rgba(37,99,235,.4), 0 4px 12px rgba(37,99,235,.2)"
-          }}>
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="white">
-              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-            </svg>
+        {/* LOGO */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{width:56,height:56,background:"linear-gradient(135deg,#2563eb,#4f46e5)",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",boxShadow:"0 8px 24px rgba(37,99,235,.3)"}}>
+            <Icon n="directions_car" size={28} color="#fff"/>
           </div>
-          <h1 style={{fontSize:34,fontWeight:900,color:"#0f172a",letterSpacing:"-1.5px",margin:0}}>RedAuto</h1>
-          <p style={{fontSize:13,color:"#64748b",marginTop:6,fontWeight:500}}>Red de Concesionarios · Tucumán</p>
+          <h1 style={{fontSize:26,fontWeight:900,color:"#0f172a",letterSpacing:"-.5px",marginBottom:6}}>RedAuto</h1>
+          <p style={{fontSize:13,color:"#64748b"}}>Red Multimarca · Tucumán</p>
         </div>
 
-        {/* card principal */}
-        <div style={{
-          background:"rgba(255,255,255,0.92)",
-          backdropFilter:"blur(20px)",
-          border:"1px solid rgba(255,255,255,0.8)",
-          borderRadius:20,
-          padding:"36px 36px 32px",
-          boxShadow:"0 24px 64px rgba(37,99,235,.12), 0 8px 24px rgba(0,0,0,.06)"
-        }}>
-          <h2 style={{fontSize:21,fontWeight:800,color:"#0f172a",marginBottom:6,letterSpacing:"-.4px"}}>Uní tu concesionaria a la red</h2>
-          <p style={{fontSize:13,color:"#64748b",marginBottom:28,lineHeight:1.5}}>Ingresá o registrate gratis para empezar a operar</p>
-
-          <form onSubmit={submit} style={{display:"flex",flexDirection:"column",gap:18}}>
-            <div>
-              <label style={{fontSize:12,fontWeight:700,color:"#475569",display:"block",marginBottom:8,letterSpacing:".3px",textTransform:"uppercase"}}>Email</label>
-              <input
-                type="email" value={email}
-                onChange={e=>setEmail(e.target.value)}
-                required
-                style={fieldStyle}
-                onFocus={e=>{e.target.style.borderColor="#3b82f6";e.target.style.boxShadow="0 0 0 4px rgba(59,130,246,.12)";}}
-                onBlur={e=>{e.target.style.borderColor="#e2e8f0";e.target.style.boxShadow="none";}}
-              />
+        {/* ADMIN PANEL */}
+        {mode==="admin" ? (
+          <div style={{background:"#fff",borderRadius:20,boxShadow:"0 20px 60px rgba(0,0,0,.1)",padding:28}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <h2 style={{fontSize:16,fontWeight:900,color:"#0f172a"}}>Panel Admin</h2>
+              <button onClick={()=>setMode("login")} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#64748b"}}>← Salir</button>
             </div>
-
-            <div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <label style={{fontSize:12,fontWeight:700,color:"#475569",letterSpacing:".3px",textTransform:"uppercase"}}>Contraseña</label>
-                <button type="button" onClick={()=>setShowP(!showP)}
-                  style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#3b82f6",fontFamily:"inherit",fontWeight:700,padding:0}}>
-                  {showP?"Ocultar":"Mostrar"}
+            <div style={{display:"flex",gap:8,marginBottom:20}}>
+              {["codes","users"].map(t=>(
+                <button key={t} onClick={()=>setAdminTab(t)}
+                  style={{flex:1,padding:"8px",borderRadius:9,border:"1.5px solid",borderColor:adminTab===t?"#2563eb":"#e2e8f0",background:adminTab===t?"#eff6ff":"#fff",fontWeight:600,fontSize:12,cursor:"pointer",color:adminTab===t?"#2563eb":"#64748b",fontFamily:"inherit"}}>
+                  {t==="codes"?"Códigos":"Usuarios"}
                 </button>
-              </div>
-              <input
-                type={showP?"text":"password"} value={pass}
-                onChange={e=>setPass(e.target.value)}
-                required
-                style={fieldStyle}
-                onFocus={e=>{e.target.style.borderColor="#3b82f6";e.target.style.boxShadow="0 0 0 4px rgba(59,130,246,.12)";}}
-                onBlur={e=>{e.target.style.borderColor="#e2e8f0";e.target.style.boxShadow="none";}}
-              />
+              ))}
             </div>
 
-            {err&&(
-              <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:10,padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
-                <div style={{width:20,height:20,background:"#ef4444",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  <span style={{color:"#fff",fontSize:12,fontWeight:900,lineHeight:1}}>!</span>
+            {adminTab==="codes" && (
+              <div>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <input value={newCodeNote} onChange={e=>setNewCodeNote(e.target.value)}
+                    placeholder="Nota (ej: para Garage Norte)"
+                    style={{...field,padding:"10px 12px",fontSize:13,flex:1}}/>
+                  <button onClick={()=>{
+                    if(!newCodeNote.trim()) return;
+                    setCodes(prev=>[...prev,{code:generateCode(),used:false,note:newCodeNote.trim()}]);
+                    setNewCodeNote("");
+                  }} style={{padding:"10px 16px",background:"#2563eb",color:"#fff",border:"none",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                    + Generar
+                  </button>
                 </div>
-                <p style={{fontSize:13,color:"#dc2626",fontWeight:600,margin:0}}>{err}</p>
+                <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:340,overflowY:"auto"}}>
+                  {codes.map((c,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:c.used?"#f8fafc":"#f0fdf4",borderRadius:10,border:"1px solid",borderColor:c.used?"#e2e8f0":"#bbf7d0"}}>
+                      <div style={{flex:1}}>
+                        <p style={{fontFamily:"monospace",fontWeight:700,fontSize:13,color:c.used?"#94a3b8":"#16a34a",letterSpacing:.5}}>{c.code}</p>
+                        <p style={{fontSize:11,color:"#64748b",marginTop:2}}>{c.note}</p>
+                      </div>
+                      <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:c.used?"#f1f5f9":"#dcfce7",color:c.used?"#94a3b8":"#16a34a"}}>
+                        {c.used?"USADO":"ACTIVO"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            <button
-              type="submit"
-              style={btnStyle}
-              onMouseEnter={e=>{e.target.style.transform="translateY(-2px)";e.target.style.boxShadow="0 8px 24px rgba(37,99,235,.45)";}}
-              onMouseLeave={e=>{e.target.style.transform="";e.target.style.boxShadow="0 4px 16px rgba(37,99,235,.35)";}}>
-              {busy ? "Verificando..." : "Ingresar al panel →"}
-            </button>
-          </form>
-
-          {/* demo */}
-          <div style={{marginTop:28,paddingTop:24,borderTop:"1px solid #f1f5f9"}}>
-            <p style={{fontSize:11,fontWeight:700,color:"#94a3b8",textAlign:"center",letterSpacing:"1px",marginBottom:14,textTransform:"uppercase"}}>Acceso rápido — Demo</p>
-            {USERS.map(u=>(
-              <button key={u.id} type="button"
-                onClick={()=>{setEmail(u.email);setPass(u.password);}}
-                style={{
-                  display:"flex",alignItems:"center",gap:12,
-                  padding:"12px 14px", width:"100%", marginBottom:8,
-                  background:"#f8fafc", border:"1.5px solid #e8edf5",
-                  borderRadius:12, cursor:"pointer",
-                  fontFamily:"'Plus Jakarta Sans','DM Sans',system-ui,sans-serif",
-                  textAlign:"left", transition:"all .15s"
-                }}
-                onMouseEnter={e=>{e.currentTarget.style.background="#eff6ff";e.currentTarget.style.borderColor="#93c5fd";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 14px rgba(37,99,235,.1)";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="#f8fafc";e.currentTarget.style.borderColor="#e8edf5";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
-                <div style={{
-                  width:38,height:38,background:u.color,borderRadius:10,
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  fontSize:15,fontWeight:800,color:"#fff",flexShrink:0,
-                  boxShadow:"0 2px 8px rgba(0,0,0,.15)"
-                }}>{u.agency[0]}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <p style={{fontSize:13,fontWeight:700,color:"#1e293b",margin:0,marginBottom:2}}>{u.agency}</p>
-                  <p style={{fontSize:11,color:"#94a3b8",margin:0}}>{u.email}</p>
-                </div>
-                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
-                  <span style={{
-                    padding:"3px 9px",borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:".3px",
-                    background:u.plan==="premium"?"#ede9fe":"#f1f5f9",
-                    color:u.plan==="premium"?"#7c3aed":"#64748b"
-                  }}>{u.plan==="premium"?"PREMIUM":"GRATIS"}</span>
-                  <span style={{fontSize:10,color:"#94a3b8",fontWeight:600}}>clave: {u.password}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <p style={{textAlign:"center",fontSize:12,color:"#64748b",marginTop:20}}>
-          ¿No tenés cuenta?{" "}
-          <span style={{color:"#2563eb",fontWeight:700,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>Contactar a RedAuto</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-const FAQS_DATA = [
-  {cat:"¿Qué es RedAuto y cómo funciona?", a:"RedAuto es una red colaborativa de concesionarios multimarca en Tucumán. Permite que las agencias compartan su stock y conecten compradores con vendedores, generando comisiones registradas digitalmente."},
-  {cat:"Matches, créditos y planes", a:"Un match ocurre cuando tu búsqueda coincide con el stock de otro concesionario. En el plan Gratis, los contactos están bloqueados y debés comprar un crédito ($50.000) para desbloquearlos. Con el plan Premium ($100.000/mes) todos los contactos son ilimitados."},
-  {cat:"Búsqueda Inversa", a:"Función exclusiva del plan Premium. Te muestra qué colegas buscan activamente autos de tu stock, para que puedas ofrecerles el vehículo primero y acelerar la rotación de tu inventario."},
-  {cat:"Garantía de comisión", a:"Cada conexión entre agencias queda registrada digitalmente. Incumplir el acuerdo afecta la calificación de tu agencia y puede resultar en la suspensión de la cuenta."},
-  {cat:"Pagos con Mercado Pago", a:"Los pagos se procesan a través de Mercado Pago con tarjeta, transferencia bancaria o saldo MP. Los créditos se acreditan automáticamente al confirmar el pago."},
-];
-
-function FaqTab() {
-  const [open, setOpen] = useState(null);
-  return (
-    <div className="fu">
-      <div style={{textAlign:"center",marginBottom:28}}>
-        <p style={{fontSize:11,fontWeight:700,color:"#0ea5e9",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Centro de ayuda</p>
-        <h2 style={{fontSize:26,fontWeight:900,letterSpacing:"-.5px",marginBottom:10}}>Preguntas Frecuentes</h2>
-        <p style={{fontSize:14,color:"#64748b",maxWidth:520,margin:"0 auto",lineHeight:1.7}}>Seleccioná el tema que querés consultar.</p>
-      </div>
-      <div style={{maxWidth:680,margin:"0 auto",display:"flex",flexDirection:"column",gap:10}}>
-        {FAQS_DATA.map((f,i)=>(
-          <div key={i} style={{border:"1.5px solid",borderColor:open===i?"#38bdf8":"#e2e8f0",borderRadius:14,background:"#fff",overflow:"hidden",boxShadow:open===i?"0 4px 20px rgba(14,165,233,.1)":"none"}}>
-            <button onClick={()=>setOpen(open===i?null:i)} style={{width:"100%",padding:"18px 22px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textAlign:"left",gap:16}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:32,height:32,borderRadius:9,flexShrink:0,background:open===i?"#0ea5e9":"#f0f9ff",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <Icon n="help_outline" size={17} color={open===i?"#fff":"#0ea5e9"}/>
-                </div>
-                <p style={{fontSize:14,fontWeight:700,color:open===i?"#0369a1":"#0f172a"}}>{f.cat}</p>
+            {adminTab==="users" && (
+              <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:380,overflowY:"auto"}}>
+                {users.map((u,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"#f8fafc",borderRadius:10,border:"1px solid #e2e8f0"}}>
+                    <div className="av" style={{width:32,height:32,background:u.color,borderRadius:8,fontSize:12,flexShrink:0}}>{u.name[0]}</div>
+                    <div style={{flex:1}}>
+                      <p style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>{u.agency}</p>
+                      <p style={{fontSize:11,color:"#64748b"}}>{u.email} · {u.city}</p>
+                    </div>
+                    <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:u.plan==="premium"?"#ede9fe":"#f1f5f9",color:u.plan==="premium"?"#7c3aed":"#6b7280"}}>
+                      {u.plan.toUpperCase()}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <Icon n={open===i?"expand_less":"expand_more"} size={22} color={open===i?"#0ea5e9":"#94a3b8"} style={{flexShrink:0}}/>
-            </button>
-            {open===i&&<div style={{padding:"0 22px 20px",borderTop:"1px solid #f0f9ff"}}><p style={{fontSize:13,color:"#475569",lineHeight:1.8,marginTop:14}}>{f.a}</p></div>}
+            )}
           </div>
-        ))}
-      </div>
-      <div style={{maxWidth:680,margin:"28px auto 0",background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:14,padding:24,textAlign:"center"}}>
-        <Icon n="support_agent" size={32} color="#0284c7"/>
-        <p style={{fontSize:15,fontWeight:800,color:"#0c4a6e",marginTop:10,marginBottom:6}}>¿Tenés otra consulta?</p>
-        <p style={{fontSize:13,color:"#0369a1",marginBottom:16}}>Escribinos y te respondemos a la brevedad.</p>
-        <a href="https://wa.me/5493812345678" target="_blank" rel="noopener noreferrer"
-          style={{display:"inline-flex",alignItems:"center",gap:8,padding:"11px 24px",background:"#25d366",color:"#fff",borderRadius:10,fontWeight:700,fontSize:14,textDecoration:"none"}}>
-          Consultar por WhatsApp
-        </a>
+
+        ) : mode==="login" ? (
+          <div style={{background:"#fff",borderRadius:20,boxShadow:"0 20px 60px rgba(0,0,0,.1)",padding:32}}>
+            <h2 style={{fontSize:20,fontWeight:900,color:"#0f172a",marginBottom:4}}>Uní tu concesionaria a la red</h2>
+            <p style={{fontSize:13,color:"#64748b",marginBottom:24}}>Ingresá con tu cuenta</p>
+            <form onSubmit={submitLogin} style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Email</label>
+                <input style={field} type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@concesionaria.com"
+                  onFocus={e=>e.target.style.borderColor="#93c5fd"} onBlur={e=>e.target.style.borderColor="#e2e8f0"}/>
+              </div>
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                  <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase"}}>Contraseña</label>
+                  <button type="button" onClick={()=>setShowP(p=>!p)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#2563eb",fontFamily:"inherit",fontWeight:600}}>{showP?"Ocultar":"Mostrar"}</button>
+                </div>
+                <input style={field} type={showP?"text":"password"} required value={pass} onChange={e=>setPass(e.target.value)}
+                  onFocus={e=>e.target.style.borderColor="#93c5fd"} onBlur={e=>e.target.style.borderColor="#e2e8f0"}/>
+              </div>
+              {err&&<p style={{fontSize:12,color:"#dc2626",background:"#fef2f2",padding:"8px 12px",borderRadius:8}}>{err}</p>}
+              <button type="submit" style={{...btn,opacity:busy?.7:1}}>{busy?"Ingresando...":"Ingresar al panel →"}</button>
+            </form>
+            <div style={{textAlign:"center",marginTop:20}}>
+              <p style={{fontSize:13,color:"#64748b"}}>¿Tenés un código de invitación?{" "}
+                <button onClick={()=>{setMode("register");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#2563eb",fontWeight:700,fontSize:13,fontFamily:"inherit"}}>Registrate acá</button>
+              </p>
+            </div>
+            {/* DEMO */}
+            <div style={{marginTop:24,padding:"16px",background:"#f8fafc",borderRadius:14,border:"1px solid #e8edf5"}}>
+              <p style={{fontSize:11,fontWeight:700,color:"#94a3b8",textAlign:"center",letterSpacing:1,marginBottom:12,textTransform:"uppercase"}}>Acceso rápido — Demo</p>
+              {users.map(u=>(
+                <button key={u.id} type="button" onClick={()=>{setEmail(u.email);setPass(u.password);}}
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",width:"100%",marginBottom:6,background:"#fff",border:"1.5px solid #e8edf5",borderRadius:10,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                  <div className="av" style={{width:32,height:32,background:u.color,borderRadius:8,fontSize:12,flexShrink:0}}>{u.name[0]}</div>
+                  <div style={{flex:1}}>
+                    <p style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>{u.agency}</p>
+                    <p style={{fontSize:11,color:"#94a3b8"}}>{u.email}</p>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:u.plan==="premium"?"#ede9fe":"#f1f5f9",color:u.plan==="premium"?"#7c3aed":"#6b7280"}}>{u.plan.toUpperCase()}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+        ) : (
+          <div style={{background:"#fff",borderRadius:20,boxShadow:"0 20px 60px rgba(0,0,0,.1)",padding:32}}>
+            <button onClick={()=>{setMode("login");setErr("");}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#64748b",fontFamily:"inherit",marginBottom:16,display:"flex",alignItems:"center",gap:4}}>
+              ← Volver al login
+            </button>
+            <h2 style={{fontSize:20,fontWeight:900,color:"#0f172a",marginBottom:4}}>Registrar concesionaria</h2>
+            <p style={{fontSize:13,color:"#64748b",marginBottom:20}}>Necesitás un código de invitación para acceder</p>
+            <form onSubmit={submitRegister} style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"12px 14px"}}>
+                <label style={{fontSize:11,fontWeight:700,color:"#16a34a",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Código de invitación</label>
+                <input style={{...field,borderColor:"#bbf7d0",fontFamily:"monospace",fontWeight:700,letterSpacing:1,textTransform:"uppercase"}} required value={inviteCode} onChange={e=>setInviteCode(e.target.value)} placeholder="RA-XXXXXXXX"/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Nombre del concesionario</label>
+                  <input style={field} required value={regOwner} onChange={e=>setRegOwner(e.target.value)} placeholder="Juan García"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Nombre de la agencia</label>
+                  <input style={field} required value={regAgency} onChange={e=>setRegAgency(e.target.value)} placeholder="García Autos"/>
+                </div>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Ciudad</label>
+                <input style={field} required value={regCity} onChange={e=>setRegCity(e.target.value)} placeholder="San Miguel de Tucumán"/>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Email</label>
+                <input style={field} type="email" required value={regEmail} onChange={e=>setRegEmail(e.target.value)} placeholder="agencia@email.com"/>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Contraseña</label>
+                <input style={field} type="password" required minLength={6} value={regPass} onChange={e=>setRegPass(e.target.value)} placeholder="Mínimo 6 caracteres"/>
+              </div>
+              {err&&<p style={{fontSize:12,color:"#dc2626",background:"#fef2f2",padding:"8px 12px",borderRadius:8}}>{err}</p>}
+              <button type="submit" style={{...btn,marginTop:4,opacity:busy?.7:1}}>{busy?"Verificando código...":"Crear cuenta →"}</button>
+            </form>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
 
-/* DASHBOARD */
 function Dashboard({user,onLogout}) {
   const [tab,setTab]=useState("dashboard");
   const [me,setMe]=useState(user);
