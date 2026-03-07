@@ -366,8 +366,11 @@ function Dashboard({user,onLogout}) {
   }
 
   function doBuyCredits(){
-    // Show MP payment modal
-    setMpModal(true);
+    setBuyModal(false);
+    setTimeout(()=>{
+      setMpStep("select");
+      setMpModal(true);
+    }, 80);
   }
 
   function doConfirmPayment(){
