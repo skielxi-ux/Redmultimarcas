@@ -343,6 +343,8 @@ function Dashboard({user,onLogout}) {
   const [buyModal,setBuyModal]=useState(false);
   const [buyQty,setBuyQty]=useState(1);
   const [gateItem,setGateItem]=useState(null);
+  const [mpModal,setMpModal]=useState(false);
+  const [mpStep,setMpStep]=useState("select"); // select | processing | done
   const [ns,setNs]=useState({brand:"",model:"",year:"",price:"",km:"",fuel:"Diesel",color:"",commission:2,desc:""});
   const [nq,setNq]=useState({brand:"",model:"",yearFrom:"",yearTo:"",budget:"",payment:"Contado"});
 
@@ -364,6 +366,12 @@ function Dashboard({user,onLogout}) {
   }
 
   function doBuyCredits(){
+    // Show MP payment modal
+    setMpModal(true);
+  }
+
+  function doConfirmPayment(){
+    setMpModal(false);
     setMe(p=>({...p,credits:p.credits+buyQty}));
     setBuyModal(false);
     if(gateItem){
@@ -1176,6 +1184,104 @@ function Dashboard({user,onLogout}) {
                 <button type="submit" className="btn btn-p" style={{flex:2,justifyContent:"center",fontSize:14,padding:11}}><Icon n="search" size={16} color="#fff"/>Buscar en la Red</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL MERCADO PAGO */}
+      {mpModal&&(
+        <div className="modal-bg fi" onClick={e=>e.target===e.currentTarget&&(setMpModal(false),setMpStep("select"))}>
+          <div className="modal-box fu" style={{maxWidth:400}}>
+            {mpStep==="select"&&(
+              <div style={{padding:28}}>
+                {/* header */}
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+                  <div style={{width:48,height:48,borderRadius:12,overflow:"hidden",flexShrink:0,background:"#009ee3",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+                      <rect width="48" height="48" rx="10" fill="#009ee3"/>
+                      <path d="M8 24c0-3.5 2.5-6.5 6-7.5l18-5c4-1 8 1.5 9 5.5s-1.5 8-5.5 9l-18 5C13.5 32.5 9 30 8 26c0-.7 0-1.3 0-2z" fill="white" opacity=".3"/>
+                      <path d="M12 26c0-2.2 1.8-4 4-4h16c2.2 0 4 1.8 4 4s-1.8 4-4 4H16c-2.2 0-4-1.8-4-4z" fill="white"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p style={{fontSize:16,fontWeight:800,color:"#0f172a"}}>Pagar con Mercado Pago</p>
+                    <p style={{fontSize:12,color:"#64748b"}}>{buyQty} credito{buyQty>1?"s":""} · {fmt(50000*buyQty)}</p>
+                  </div>
+                  <button onClick={()=>{setMpModal(false);setMpStep("select");}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",padding:4,display:"flex"}}>
+                    <Icon n="close" size={20} color="#94a3b8"/>
+                  </button>
+                </div>
+
+                {/* resumen */}
+                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:16,marginBottom:20}}>
+                  <p style={{fontSize:11,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Resumen de compra</p>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                    <p style={{fontSize:13,color:"#475569"}}>Creditos de Conexion x{buyQty}</p>
+                    <p style={{fontSize:13,fontWeight:700}}>{fmt(50000*buyQty)}</p>
+                  </div>
+                  {gateItem&&(
+                    <div style={{borderTop:"1px solid #f1f5f9",paddingTop:8,marginTop:8}}>
+                      <p style={{fontSize:11,color:"#64748b"}}>Para desbloquear:</p>
+                      <p style={{fontSize:12,fontWeight:600,color:"#0f172a",marginTop:2}}>{gateItem.brand} {gateItem.model} {gateItem.year}</p>
+                      <p style={{fontSize:11,color:"#16a34a",fontWeight:600}}>Comision posible: {fmt(gateItem.price*gateItem.commission/100)}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* metodos */}
+                <p style={{fontSize:12,fontWeight:700,color:"#64748b",marginBottom:10}}>Selecciona metodo de pago</p>
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+                  {[
+                    {icon:"credit_card", label:"Tarjeta de credito / debito", sub:"Visa, Mastercard, American Express"},
+                    {icon:"account_balance", label:"Transferencia bancaria", sub:"CVU / CBU instantaneo"},
+                    {icon:"toll", label:"Saldo en Mercado Pago", sub:"Disponible al instante"},
+                  ].map((m,i)=>(
+                    <div key={i}
+                      style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",border:"1.5px solid #e2e8f0",borderRadius:11,cursor:"pointer",background:"#fff",transition:"all .14s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor="#009ee3";e.currentTarget.style.background="#f0faff";}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor="#e2e8f0";e.currentTarget.style.background="#fff";}}
+                      onClick={()=>setMpStep("processing")}>
+                      <div style={{width:36,height:36,background:"#e0f2fe",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        <Icon n={m.icon} size={18} color="#0284c7"/>
+                      </div>
+                      <div style={{flex:1}}>
+                        <p style={{fontSize:13,fontWeight:600,color:"#0f172a"}}>{m.label}</p>
+                        <p style={{fontSize:11,color:"#94a3b8"}}>{m.sub}</p>
+                      </div>
+                      <Icon n="chevron_right" size={16} color="#94a3b8"/>
+                    </div>
+                  ))}
+                </div>
+
+                <button onClick={()=>{setMpModal(false);setMpStep("select");}}
+                  style={{width:"100%",padding:"11px",background:"#f1f5f9",color:"#475569",border:"none",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,fontSize:13}}>
+                  Cancelar
+                </button>
+              </div>
+            )}
+
+            {mpStep==="processing"&&(
+              <div style={{padding:40,textAlign:"center"}}>
+                <div style={{width:72,height:72,background:"#e0f2fe",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}>
+                  <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+                    <rect width="48" height="48" rx="10" fill="#009ee3"/>
+                    <path d="M12 26c0-2.2 1.8-4 4-4h16c2.2 0 4 1.8 4 4s-1.8 4-4 4H16c-2.2 0-4-1.8-4-4z" fill="white"/>
+                  </svg>
+                </div>
+                <p style={{fontSize:17,fontWeight:800,color:"#0f172a",marginBottom:6}}>Procesando pago...</p>
+                <p style={{fontSize:13,color:"#64748b",marginBottom:28}}>Conectando con Mercado Pago</p>
+                <div style={{height:6,background:"#f1f5f9",borderRadius:10,overflow:"hidden",marginBottom:28}}>
+                  <div style={{height:"100%",width:"70%",background:"linear-gradient(90deg,#009ee3,#00c8ff)",borderRadius:10,animation:"shimmerBar 1.2s ease infinite"}}/>
+                </div>
+                <style>{`@keyframes shimmerBar{0%{width:20%}50%{width:80%}100%{width:20%}}`}</style>
+                <button
+                  onClick={doConfirmPayment}
+                  style={{width:"100%",padding:"13px",background:"#009ee3",color:"#fff",border:"none",borderRadius:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700,fontSize:15,boxShadow:"0 4px 14px rgba(0,158,227,.35)"}}>
+                  Simular pago aprobado ✓
+                </button>
+                <p style={{fontSize:11,color:"#94a3b8",marginTop:10}}>Demo — en produccion redirige a Mercado Pago</p>
+              </div>
+            )}
           </div>
         </div>
       )}
