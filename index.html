@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RedAuto</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js" crossorigin></script>
 <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800,900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -18,9 +18,22 @@ body{font-family:'Plus Jakarta Sans','DM Sans','Nunito',system-ui,-apple-system,
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#eff6ff;font-family:sans-serif;color:#64748b;font-size:14px">Cargando RedAuto...</div></div>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  document.getElementById('root').innerHTML = '<div style="padding:30px;font-family:monospace;background:#fef2f2;color:#dc2626;font-size:13px;white-space:pre-wrap"><strong>ERROR:</strong>\n' + msg + '\nLinea: ' + line + '\n' + (err ? err.stack : '') + '</div>';
+};
+</script>
 <script type="text/babel">
 const {useState,useRef} = React;
+
+// CÓDIGOS DE INVITACIÓN
+const INVITE_CODES = [
+  {code:"REDAUTO-2025-A1", used:false, note:"Para AutoCenter Este"},
+  {code:"REDAUTO-2025-B2", used:false, note:"Para Garage Centro"},
+  {code:"REDAUTO-2025-C3", used:false, note:"Para concesionario nuevo"},
+];
+const ADMIN = {email:"admin@redauto.com", password:"redauto2025"};
 
 const USERS = [
   {id:"u1",email:"carlos@autocenter.com",password:"1234",name:"Carlos Mendez",agency:"AutoCenter Norte",city:"Yerba Buena",plan:"premium",credits:8,rating:4.8,ops:34,color:"#6366f1"},
@@ -410,15 +423,13 @@ function Login({onLogin}) {
                 <label style={{fontSize:11,fontWeight:700,color:"#16a34a",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Código de invitación</label>
                 <input style={{...field,borderColor:"#bbf7d0",fontFamily:"monospace",fontWeight:700,letterSpacing:1,textTransform:"uppercase"}} required value={inviteCode} onChange={e=>setInviteCode(e.target.value)} placeholder="RA-XXXXXXXX"/>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div>
-                  <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Nombre del concesionario</label>
-                  <input style={field} required value={regOwner} onChange={e=>setRegOwner(e.target.value)} placeholder="Juan García"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Nombre de la agencia</label>
-                  <input style={field} required value={regAgency} onChange={e=>setRegAgency(e.target.value)} placeholder="García Autos"/>
-                </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Nombre del concesionario</label>
+                <input style={field} required value={regOwner} onChange={e=>setRegOwner(e.target.value)} placeholder="Juan García"/>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Nombre de la agencia</label>
+                <input style={field} required value={regAgency} onChange={e=>setRegAgency(e.target.value)} placeholder="García Autos"/>
               </div>
               <div>
                 <label style={{fontSize:11,fontWeight:700,color:"#64748b",letterSpacing:.8,textTransform:"uppercase",display:"block",marginBottom:6}}>Ciudad</label>
